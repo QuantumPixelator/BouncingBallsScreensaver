@@ -1,4 +1,4 @@
-# Arcade Screensaver
+# Bouncing Balls Screensaver
 
 A Python screensaver app using the Arcade library. Multiple circles bounce around the screen, smoothly fading between colors. The app supports fullscreen, keyboard exit, and configurable options for the number of circles, speed, and fill/outline mode.
 
@@ -22,6 +22,9 @@ A Python screensaver app using the Arcade library. Multiple circles bounce aroun
    python main.py
    ```
 3. The app will exit if you press any key.
+
+## To-Do
+- Add mouse movement to close app.
 
 ## License
 
