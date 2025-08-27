@@ -23,6 +23,8 @@ A Python screensaver app using the Arcade library. Multiple circles bounce aroun
    ```
 3. The app will exit if you press any key.
 
+- There is also a text-based bouncing screensaver: text.py
+
 ## To-Do
 - Add mouse movement to close app.
 
