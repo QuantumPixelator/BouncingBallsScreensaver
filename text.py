@@ -1,12 +1,13 @@
 import arcade
 import random
 import math
+import time
 
 SCREEN_TITLE = "Screensaver"
 MESSAGE = "I am to misbehave"   # Change this to your desired message
 FONT_SIZE = 45        # Change this to your desired font size
-SPEED_MULTIPLIER = 4  # Increase to make text move faster
-FADE_SPEED = 0.01     # How fast to fade between colors
+SPEED_MULTIPLIER = 200  # Increase to make text move faster
+FADE_SPEED = 1.0     # How fast to fade between colors
 FONT_NAME = "Arial"
 
 COLOR_LIST = [
@@ -47,24 +48,21 @@ class BouncingText:
         self.color_index = 0
         self.next_color_index = 1
         self.fade_t = 0.0
-        self._update_text_size()
-
-    def _update_text_size(self):
-        # Create a temporary Text object to measure dimensions
-        text_obj = arcade.Text(
+        # Cache text size (doesn't change)
+        self.text_obj = arcade.Text(
             self.text,
-            0, 0,  # Position doesn't matter for size calculation
-            arcade.color.WHITE,  # Color doesn't matter
+            0, 0,
+            arcade.color.WHITE,
             self.font_size,
             font_name=FONT_NAME,
             bold=True
         )
-        self.text_width = text_obj.content_width
-        self.text_height = text_obj.content_height
+        self.text_width = self.text_obj.content_width
+        self.text_height = self.text_obj.content_height
 
-    def update(self):
-        self.x += self.dx * SPEED_MULTIPLIER
-        self.y += self.dy * SPEED_MULTIPLIER
+    def update(self, delta_time):
+        self.x += self.dx * SPEED_MULTIPLIER * delta_time
+        self.y += self.dy * SPEED_MULTIPLIER * delta_time
 
         # Bounce off left/right
         if self.x - self.text_width/2 <= 0:
@@ -83,7 +81,7 @@ class BouncingText:
             self.dy *= -1
 
         # Fade color
-        self.fade_t += FADE_SPEED
+        self.fade_t += FADE_SPEED * delta_time
         if self.fade_t >= 1.0:
             self.fade_t = 0.0
             self.color_index = self.next_color_index
@@ -101,29 +99,28 @@ class BouncingTextWindow(arcade.Window):
         self.screen_width, self.screen_height = self.get_size()
         arcade.set_background_color(arcade.color.BLACK)
         self.bouncing_text = BouncingText(MESSAGE, FONT_SIZE, self.screen_width, self.screen_height)
+        self.start_time = time.time()
 
     def on_draw(self):
         self.clear()
         color = self.bouncing_text.get_color()
-        arcade.draw_text(
-            self.bouncing_text.text,
-            self.bouncing_text.x - self.bouncing_text.text_width/2,
-            self.bouncing_text.y - self.bouncing_text.text_height/2,
-            color,
-            self.bouncing_text.font_size,
-            font_name=FONT_NAME,
-            bold=True
-        )
+        self.bouncing_text.text_obj.x = self.bouncing_text.x - self.bouncing_text.text_width / 2
+        self.bouncing_text.text_obj.y = self.bouncing_text.y - self.bouncing_text.text_height / 2
+        self.bouncing_text.text_obj.color = color
+        self.bouncing_text.text_obj.draw()
 
     def on_update(self, delta_time):
         self.screen_width, self.screen_height = self.get_size()
         self.bouncing_text.screen_width = self.screen_width
         self.bouncing_text.screen_height = self.screen_height
-        self.bouncing_text._update_text_size()
-        self.bouncing_text.update()
+        self.bouncing_text.update(delta_time)
 
     def on_key_press(self, symbol, modifiers):
         self.close()
+
+    def on_mouse_motion(self, x, y, dx, dy):
+        if time.time() - self.start_time > 2.0 and (abs(dx) > 5 or abs(dy) > 5):
+            self.close()
 
 def main():
     window = BouncingTextWindow(800, 600, SCREEN_TITLE)

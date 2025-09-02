@@ -1,28 +1,28 @@
 # Bouncing Balls screensaver app
 
-# Import the Arcade library
+# Import the Arcade library, and other libraries
 import arcade
+import random
+import math
+import time
 
 # Set the window title
 SCREEN_TITLE = "Bouncing Balls"
 
-# Circle radius and movement
-CIRCLE_RADIUS = 75
-NUM_CIRCLES = 10  # Change this to set how many circles you want
+# Configuration
+NUM_CIRCLES = 25  # Change this to set how many circles you want
 SPEED_MULTIPLIER = 4  # Increase to make circles move faster (without reducing framerate)
 MOVE_AMOUNT = 1  # How far to move each circle per frame
 FILL_CIRCLES = False  # Set to False for outlines, True for filled
-
-import random
-
-def lerp_color(color1, color2, t):
-    return (
-        int(color1[0] + (color2[0] - color1[0]) * t),
-        int(color1[1] + (color2[1] - color1[1]) * t),
-        int(color1[2] + (color2[2] - color1[2]) * t)
-    )
-
 FADE_SPEED = 0.01  # How fast to fade between colors
+
+# Bevel factors for 3D effect
+DARKER_FACTOR = 0.5
+LIGHTER_FACTOR = 1.5
+OUTER_WIDTH = 6
+INNER_WIDTH = 2
+
+# Color list
 COLOR_LIST = [
     arcade.color.RED,
     arcade.color.ORANGE,
@@ -40,14 +40,21 @@ COLOR_LIST = [
     arcade.color.WHITE,
 ]
 
-import math
+def lerp_color(color1, color2, t):
+    # Optimized lerp with integer output
+    return (
+        int(color1[0] + (color2[0] - color1[0]) * t),
+        int(color1[1] + (color2[1] - color1[1]) * t),
+        int(color1[2] + (color2[2] - color1[2]) * t)
+    )
 
 class FadingCircle:
-    def __init__(self, x, y, dx, dy, color_index=0, next_color_index=1):
+    def __init__(self, x, y, dx, dy, color_index=0, next_color_index=1, radius=75):
         self.x = x
         self.y = y
         self.dx = dx
         self.dy = dy
+        self.radius = radius
         self.color_index = color_index
         self.next_color_index = next_color_index
         self.fade_t = 0.0
@@ -57,19 +64,19 @@ class FadingCircle:
         self.y += self.dy * SPEED_MULTIPLIER
 
         # Bounce off left/right
-        if self.x - CIRCLE_RADIUS <= 0:
-            self.x = CIRCLE_RADIUS
+        if self.x - self.radius <= 0:
+            self.x = self.radius
             self.dx *= -1
-        elif self.x + CIRCLE_RADIUS >= screen_width:
-            self.x = screen_width - CIRCLE_RADIUS
+        elif self.x + self.radius >= screen_width:
+            self.x = screen_width - self.radius
             self.dx *= -1
 
         # Bounce off top/bottom
-        if self.y - CIRCLE_RADIUS <= 0:
-            self.y = CIRCLE_RADIUS
+        if self.y - self.radius <= 0:
+            self.y = self.radius
             self.dy *= -1
-        elif self.y + CIRCLE_RADIUS >= screen_height:
-            self.y = screen_height - CIRCLE_RADIUS
+        elif self.y + self.radius >= screen_height:
+            self.y = screen_height - self.radius
             self.dy *= -1
 
         # Fade color
@@ -89,35 +96,51 @@ class CircleWindow(arcade.Window):
         super().__init__(width, height, title, fullscreen=True)
         # Hide the mouse pointer
         self.set_mouse_visible(False)
-        # Get the actual screen size
+        # Cache screen size
         self.screen_width, self.screen_height = self.get_size()
         arcade.set_background_color(arcade.color.BLACK)
+        self.start_time = time.time()
         # Generate circles with random positions and velocities
         self.circles = []
         for i in range(NUM_CIRCLES):
+            radius = random.randint(35, 75)
             angle = random.uniform(0, 2 * math.pi)
             speed = MOVE_AMOUNT
             dx = math.cos(angle) * speed
             dy = math.sin(angle) * speed
             # Avoid spawning at the very edge
-            x = random.uniform(CIRCLE_RADIUS, self.screen_width - CIRCLE_RADIUS)
-            y = random.uniform(CIRCLE_RADIUS, self.screen_height - CIRCLE_RADIUS)
+            x = random.uniform(radius, self.screen_width - radius)
+            y = random.uniform(radius, self.screen_height - radius)
             color_index = i % len(COLOR_LIST)
             next_color_index = (color_index + 1) % len(COLOR_LIST)
-            self.circles.append(FadingCircle(x, y, dx, dy, color_index, next_color_index))
+            self.circles.append(FadingCircle(x, y, dx, dy, color_index, next_color_index, radius))
 
     def on_draw(self):
         self.clear()
         for circle in self.circles:
             color = circle.get_color()
             if FILL_CIRCLES:
-                arcade.draw_circle_filled(circle.x, circle.y, CIRCLE_RADIUS, color)
+                arcade.draw_circle_filled(circle.x, circle.y, circle.radius, color)
             else:
-                arcade.draw_circle_outline(circle.x, circle.y, CIRCLE_RADIUS, color, border_width=4)
+                # Beveled effect for outlines
+                # Compute darker color for outer bevel
+                darker_color = (int(color[0] * DARKER_FACTOR), int(color[1] * DARKER_FACTOR), int(color[2] * DARKER_FACTOR))
+                # Compute lighter color for inner bevel
+                lighter_color = (min(255, int(color[0] * LIGHTER_FACTOR)), min(255, int(color[1] * LIGHTER_FACTOR)), min(255, int(color[2] * LIGHTER_FACTOR)))
+                
+                # Draw outer outline (darker, thicker)
+                arcade.draw_circle_outline(circle.x, circle.y, circle.radius, darker_color, border_width=OUTER_WIDTH)
+                
+                # Draw inner outline (lighter, thinner)
+                arcade.draw_circle_outline(circle.x, circle.y, circle.radius, lighter_color, border_width=INNER_WIDTH)
 
     def on_update(self, delta_time):
-        # Always use the current screen size in case of display changes
-        self.screen_width, self.screen_height = self.get_size()
+        # Update screen size only if changed
+        new_width, new_height = self.get_size()
+        if new_width != self.screen_width or new_height != self.screen_height:
+            self.screen_width = new_width
+            self.screen_height = new_height
+        
         for circle in self.circles:
             circle.update(self.screen_width, self.screen_height)
 
@@ -128,28 +151,28 @@ class CircleWindow(arcade.Window):
                 c2 = self.circles[j]
                 dx = c1.x - c2.x
                 dy = c1.y - c2.y
-                dist = math.hypot(dx, dy)
-                min_dist = 2 * CIRCLE_RADIUS
-                if dist < min_dist:
+                dist_sq = dx * dx + dy * dy  # Avoid sqrt for performance
+                min_dist_sq = (c1.radius + c2.radius) ** 2
+                if dist_sq < min_dist_sq:
                     # Simple elastic collision: swap velocities
                     c1.dx, c2.dx = c2.dx, c1.dx
                     c1.dy, c2.dy = c2.dy, c1.dy
                     # Move them apart so they don't stick
-                    overlap = min_dist - dist
-                    angle = math.atan2(dy, dx)
-                    c1.x += math.cos(angle) * (overlap / 2)
-                    c1.y += math.sin(angle) * (overlap / 2)
-                    c2.x -= math.cos(angle) * (overlap / 2)
-                    c2.y -= math.sin(angle) * (overlap / 2)
+                    dist = math.sqrt(dist_sq)
+                    overlap = (c1.radius + c2.radius) - dist
+                    if dist > 0:
+                        angle = math.atan2(dy, dx)
+                        c1.x += math.cos(angle) * (overlap / 2)
+                        c1.y += math.sin(angle) * (overlap / 2)
+                        c2.x -= math.cos(angle) * (overlap / 2)
+                        c2.y -= math.sin(angle) * (overlap / 2)
 
     def on_key_press(self, symbol, modifiers):
         self.close()  # Close the app if a key is pressed
 
-        # I had the mouse movement to close the app but couldn't get it working correctly:
-        # def on_mouse_motion(self, x, y, dx, dy):
-        #     distance = math.sqrt(dx**2 + dy**2)
-        #     if distance > min_distance_threshold:
-        #         self.close()
+    def on_mouse_motion(self, x, y, dx, dy):
+        if time.time() - self.start_time > 2.0 and (abs(dx) > 5 or abs(dy) > 5):
+            self.close()
 
 def main():
     # Use a default size, but CircleWindow will detect and use the real screen size

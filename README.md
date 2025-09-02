@@ -21,12 +21,9 @@ A Python screensaver app using the Arcade library. Multiple circles bounce aroun
    ```
    python main.py
    ```
-3. The app will exit if you press any key.
+3. The app will exit if you press any key or move the mouse.
 
 - There is also a text-based bouncing screensaver: text.py
-
-## To-Do
-- Add mouse movement to close app.
 
 ## License
 
