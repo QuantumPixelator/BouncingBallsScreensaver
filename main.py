@@ -10,14 +10,14 @@ import time
 SCREEN_TITLE = "Bouncing Balls"
 
 # Configuration
-NUM_CIRCLES = 25  # Change this to set how many circles you want
+NUM_CIRCLES = 17  # Change this to set how many circles you want
 SPEED_MULTIPLIER = 4  # Increase to make circles move faster (without reducing framerate)
 MOVE_AMOUNT = 1  # How far to move each circle per frame
 FILL_CIRCLES = False  # Set to False for outlines, True for filled
 FADE_SPEED = 0.01  # How fast to fade between colors
 
 # Bevel factors for 3D effect
-DARKER_FACTOR = 0.5
+DARKER_FACTOR = 0.3
 LIGHTER_FACTOR = 1.5
 OUTER_WIDTH = 6
 INNER_WIDTH = 2
